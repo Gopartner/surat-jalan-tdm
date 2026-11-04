@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-04",
+  "items": [
+    {
+      "id": "drv-warjo",
+      "nama": "Warjo",
+      "nopol": "DR 8641 KC",
+      "rental": false,
+      "aktif": true
+    },
+    {
+      "id": "drv-hartanto",
+      "nama": "Hartanto",
+      "nopol": "DR 8638 KC",
+      "rental": false,
+      "aktif": true
+    },
+    {
+      "id": "drv-fauji",
+      "nama": "Fauji",
+      "nopol": "DR 8642 KC",
+      "rental": false,
+      "aktif": true
+    },
+    {
+      "id": "drv-suprapto",
+      "nama": "Suprapto",
+      "nopol": "KH 8947 FD",
+      "rental": false,
+      "aktif": true
+    },
+    {
+      "id": "drv-djoko",
+      "nama": "Djoko",
+      "nopol": "KH 8189 LF",
+      "rental": false,
+      "aktif": true
+    },
+    {
+      "id": "drv-herman",
+      "nama": "Herman",
+      "nopol": "KH 8389 FI",
+      "rental": false,
+      "aktif": true
+    },
+    {
+      "id": "drv-sugiho-new",
+      "nama": "Sugiho new",
+      "nopol": "DA 8978 HK",
+      "rental": false,
+      "aktif": true
+    },
+    {
+      "id": "drv-suki",
+      "nama": "Suki",
+      "nopol": "KM 8727 HK",
+      "rental": false,
+      "aktif": true
+    }
+  ]
+}

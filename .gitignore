@@ -1,0 +1,31 @@
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Log & temp
+*.log
+*.tmp
+_tmp/
+tmp/
+.cache/
+
+# Node (hanya untuk tooling/testing, bukan runtime aplikasi)
+node_modules/
+npm-debug.log*
+package-lock.json
+
+# Build artifact
+_site/
+dist/
+
+# Local environment
+.env
+.env.local
+*.local

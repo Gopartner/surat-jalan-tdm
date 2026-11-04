@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Surat Jalan TDM">
+  <rect width="64" height="64" rx="14" fill="#0f2f52" />
+  <rect x="0" y="50" width="64" height="14" rx="0" fill="#f5821f" />
+  <rect x="0" y="44" width="64" height="8" fill="#f5821f" />
+  <text x="32" y="36" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="800" fill="#ffffff" text-anchor="middle">SJT</text>
+</svg>
