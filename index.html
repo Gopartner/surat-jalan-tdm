@@ -30,6 +30,11 @@
       </div>
 
       <div class="header-actions">
+        <div class="theme-switch" role="group" aria-label="Mode tampilan">
+          <button type="button" class="theme-btn" data-theme-option="system" title="Ikuti sistem" aria-label="Mode sistem" aria-pressed="false">🖥</button>
+          <button type="button" class="theme-btn" data-theme-option="light" title="Mode terang" aria-label="Mode terang" aria-pressed="false">☀</button>
+          <button type="button" class="theme-btn" data-theme-option="dark" title="Mode gelap" aria-label="Mode gelap" aria-pressed="false">🌙</button>
+        </div>
         <span class="save-state" id="save-state" data-state="saved">Draft tersimpan</span>
         <button type="button" class="btn btn-ghost" id="btn-open-saved">
           Laporan Tersimpan <span class="badge" id="saved-count">0</span>
@@ -196,62 +201,10 @@
             </p>
           </div>
         </section>
-
-        <!-- E. VALIDASI -->
-        <section class="card section-anchor" id="section-validasi">
-          <div class="card-head">
-            <h2 class="card-title">Validasi Sementara</h2>
-            <div class="validasi-head">
-              <span class="status-pill status-incomplete" id="validasi-pill">Memuat…</span>
-            </div>
-          </div>
-          <div class="card-body">
-            <p class="card-hint" id="validasi-summary">Memeriksa data laporan…</p>
-            <ul class="check-list" id="validasi-list"></ul>
-          </div>
-        </section>
       </div>
-
-      <!-- ================= PANEL PREVIEW ================= -->
-      <aside class="col-side" id="preview-panel">
-        <section class="card preview-card">
-          <div class="card-head">
-            <h2 class="card-title">Preview Laporan</h2>
-            <span class="status-pill status-incomplete" id="preview-status">Memuat…</span>
-          </div>
-          <div class="card-body">
-            <div class="preview-actions">
-              <button type="button" class="btn btn-primary" id="btn-pdf">⬇ Download PDF</button>
-              <button type="button" class="btn btn-secondary" id="btn-txt">⬇ Download TXT</button>
-              <button type="button" class="btn btn-secondary" id="btn-copy">⧉ Copy Text</button>
-              <button type="button" class="btn btn-secondary" id="btn-print">🖨 Print</button>
-              <button type="button" class="btn btn-secondary span-2" id="btn-save">💾 Simpan Laporan</button>
-              <button type="button" class="btn btn-danger span-2" id="btn-reset">↺ Reset Form</button>
-            </div>
-
-            <pre class="preview-text" id="preview-text" aria-live="polite"></pre>
-
-            <div class="preview-meta">
-              <span id="preview-docid">—</span>
-              <span id="preview-updated">—</span>
-            </div>
-
-            <label class="field-note" style="display: flex; gap: 8px; align-items: flex-start">
-              <input type="checkbox" id="chk-sementara" style="margin-top: 3px" />
-              <span>Izinkan export <strong>laporan sementara</strong> walau validasi belum lengkap.</span>
-            </label>
-
-            <div style="display: flex; gap: 8px; flex-wrap: wrap">
-              <button type="button" class="btn btn-secondary btn-sm" id="btn-export-json">Export JSON</button>
-              <button type="button" class="btn btn-secondary btn-sm" id="btn-import-json">Import JSON</button>
-              <input type="file" id="file-import" accept="application/json,.json" hidden />
-            </div>
-          </div>
-        </section>
-      </aside>
     </div>
 
-    <!-- Ringkasan live: angka berubah saat mengetik, selalu terlihat -->
+    <!-- Ringkasan live: angka berubah saat mengetik -->
     <aside class="live-dock no-print" id="live-dock" aria-label="Ringkasan data real-time">
       <button type="button" class="live-toggle" id="live-toggle" aria-expanded="true" aria-controls="live-body">
         <span class="live-dot" aria-hidden="true"></span>
@@ -272,14 +225,31 @@
       </div>
     </aside>
 
-    <!-- Aksi cepat mobile -->
-    <div class="mobile-bar no-print">
-      <button type="button" class="btn btn-secondary" id="btn-m-preview">Preview</button>
-      <button type="button" class="btn btn-primary" id="btn-m-pdf">PDF</button>
-      <button type="button" class="btn btn-secondary" id="btn-m-txt">TXT</button>
-      <button type="button" class="btn btn-secondary" id="btn-m-save">Simpan</button>
+    <!-- Tombol floating: Preview / PDF / TXT / Simpan / Lainnya -->
+    <div class="fab no-print" id="fab">
+      <div class="fab-actions" id="fab-actions">
+        <button type="button" class="fab-action" data-fab="lainnya">
+          <span class="fab-label">Lainnya</span><span class="fab-icon" aria-hidden="true">⋯</span>
+        </button>
+        <button type="button" class="fab-action" data-fab="simpan">
+          <span class="fab-label">Simpan</span><span class="fab-icon" aria-hidden="true">💾</span>
+        </button>
+        <button type="button" class="fab-action" data-fab="txt">
+          <span class="fab-label">TXT</span><span class="fab-icon" aria-hidden="true">📄</span>
+        </button>
+        <button type="button" class="fab-action" data-fab="pdf">
+          <span class="fab-label">PDF</span><span class="fab-icon" aria-hidden="true">📕</span>
+        </button>
+        <button type="button" class="fab-action is-primary" data-fab="preview">
+          <span class="fab-label">Preview</span><span class="fab-icon" aria-hidden="true">👁</span>
+        </button>
+      </div>
+      <button type="button" class="fab-main" id="fab-main" aria-expanded="false" aria-label="Buka menu aksi laporan">
+        <span class="fab-plus" aria-hidden="true">+</span>
+      </button>
     </div>
 
+    <input type="file" id="file-import" accept="application/json,.json" hidden />
     <div id="modal-root"></div>
     <div class="toast-root" id="toast-root" aria-live="polite" aria-atomic="true"></div>
     <div class="print-root" id="print-root"></div>

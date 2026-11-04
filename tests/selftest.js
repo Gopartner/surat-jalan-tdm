@@ -133,7 +133,7 @@ async function run() {
   check("live armada = 8", () => q("#live-armada").textContent === "8");
   check("live total ritase = 115", () => q("#live-ritase").textContent === "115");
   check("live grand total = 115", () => q("#live-grand").textContent === "115");
-  check("live status sama dengan status validasi", () => q("#live-status").textContent.trim() === q("#validasi-pill").textContent.trim());
+  check("live status sama dengan status validasi", () => q("#live-status").textContent.trim() === state.validation.label);
   check("waktu update live terisi", () => q("#live-time").textContent.trim() !== "—");
 
   setValue(ritInputs[0], "0");
@@ -174,9 +174,9 @@ async function run() {
 
   check("subtotal batu 0.5/1 = 115", () => q('[data-role="subtotal-batu-05-1"]').textContent === "115");
   check("nilai 0 dihitung sebagai terisi", () => state.validation.material.complete === true);
-  check("status validasi VALID saat total cocok", () => q("#validasi-pill").textContent.trim() === "VALID");
+  check("status validasi VALID saat total cocok", () => state.validation.status === "valid");
   check("total rincian material = grand total", () => q('[data-role="material-total"]').textContent === "115");
-  check("preview memuat bagian rincian ukuran batu", () => q("#preview-text").textContent.includes("RINCIAN UKURAN BATU"));
+  check("preview memuat bagian rincian ukuran batu", () => state.previewText.includes("RINCIAN UKURAN BATU"));
 
   /* 7b. Nama driver tersinkron real-time ke tabel rincian */
   const namaAsli = state.report.drivers[0].nama;
@@ -185,9 +185,9 @@ async function run() {
     const cell = q(`tr[data-uid="${state.report.drivers[0].uid}"] .mat-driver strong`);
     return Boolean(cell) && cell.textContent === "Nama Uji Live";
   });
-  check("preview ikut memakai nama baru", () => q("#preview-text").textContent.includes("Nama Uji Live"));
+  check("preview ikut memakai nama baru", () => state.previewText.includes("Nama Uji Live"));
   setValue(qa(".driver-name")[0], namaAsli);
-  check("nama kembali seperti semula", () => q("#preview-text").textContent.includes(namaAsli));
+  check("nama kembali seperti semula", () => state.previewText.includes(namaAsli));
 
   /* 8. Belum diisi (null) vs nol */
   const target = state.report.drivers[2];
@@ -195,18 +195,18 @@ async function run() {
   setValue(emptyInput, "");
   await wait(50);
   check("sel kosong ditandai belum diisi", () => state.report.material.values[target.uid][categories[1]] === null);
-  check("status menjadi PERLU DILENGKAPI", () => q("#validasi-pill").textContent.trim() === "PERLU DILENGKAPI");
-  check("preview menampilkan 'belum'", () => q("#preview-text").textContent.includes("belum"));
+  check("status menjadi PERLU DILENGKAPI", () => state.validation.label === "PERLU DILENGKAPI" && q("#live-status").textContent.trim() === "PERLU DILENGKAPI");
+  check("preview menampilkan 'belum'", () => state.previewText.includes("belum"));
 
   fill(target.uid, categories[1], 0);
   await wait(50);
-  check("status kembali VALID", () => q("#validasi-pill").textContent.trim() === "VALID");
+  check("status kembali VALID", () => state.validation.status === "valid");
 
   /* 9. Pilihan Lainnya */
   setValue(q("#laporan-select"), "lainnya");
   check("input manual muncul untuk Lainnya", () => q("#laporan-custom").hidden === false);
   setValue(q("#laporan-custom"), "Laporan Uji");
-  check("judul preview mengikuti input manual", () => q("#preview-text").textContent.includes("LAPORAN UJI"));
+  check("judul preview mengikuti input manual", () => state.previewText.includes("LAPORAN UJI"));
   setValue(q("#laporan-select"), "lh-segintung");
   check("kembali ke preset menyembunyikan input manual", () => q("#laporan-custom").hidden === true);
 
@@ -251,11 +251,86 @@ async function run() {
     const r = q("#live-dock").getBoundingClientRect();
     return r.left >= -1 && r.right <= window.innerWidth + 1 && r.bottom <= window.innerHeight + 1;
   });
-  check("panel live tidak menutupi tombol aksi mobile", () => {
-    const bar = q(".mobile-bar");
-    if (getComputedStyle(bar).display === "none") return true;
-    return q("#live-dock").getBoundingClientRect().bottom <= bar.getBoundingClientRect().top + 1;
+  check("tombol floating berada di dalam viewport", () => {
+    const r = q("#fab").getBoundingClientRect();
+    return r.left >= -1 && r.right <= window.innerWidth + 1 && r.bottom <= window.innerHeight + 1;
   });
+  check("panel live tidak menutupi tombol floating", () => {
+    const dock = q("#live-dock").getBoundingClientRect();
+    const fab = q("#fab").getBoundingClientRect();
+    const overlap =
+      dock.right > fab.left + 1 &&
+      dock.left < fab.right - 1 &&
+      dock.bottom > fab.top + 1 &&
+      dock.top < fab.bottom - 1;
+    return !overlap;
+  });
+
+  /* 13b. Mode tampilan (system / terang / gelap) */
+  check("tema awal teresolusi ke terang/gelap", () => ["light", "dark"].includes(document.documentElement.dataset.theme));
+  check("mode default tombol tema adalah system", () => Boolean(q('[data-theme-option="system"]').classList.contains("is-active")));
+  click(q('[data-theme-option="dark"]'));
+  check("mode gelap diterapkan", () => document.documentElement.dataset.theme === "dark");
+  check("teks tetap terang di mode gelap", () => {
+    const rgb = (getComputedStyle(q(".driver-name")).color.match(/\d+/g) || []).map(Number);
+    return rgb[0] > 150 && rgb[1] > 150 && rgb[2] > 150;
+  });
+  check("permukaan kartu menjadi gelap", () => {
+    const rgb = (getComputedStyle(q(".card")).backgroundColor.match(/\d+/g) || []).map(Number);
+    return rgb[0] < 60 && rgb[1] < 60 && rgb[2] < 70;
+  });
+  check("preferensi tema tersimpan di LocalStorage", () =>
+    (window.localStorage.getItem("sjt:settings:v1") || "").includes('"theme":"dark"')
+  );
+  click(q('[data-theme-option="light"]'));
+  check("mode terang diterapkan", () => document.documentElement.dataset.theme === "light");
+  click(q('[data-theme-option="system"]'));
+  check("mode sistem kembali aktif", () => q('[data-theme-option="system"]').getAttribute("aria-pressed") === "true");
+
+  /* 13c. FAB + modal aksi */
+  check("FAB tertutup secara default", () => !q("#fab").classList.contains("is-open"));
+  click(q("#fab-main"));
+  check("FAB terbuka dengan 5 aksi", () => q("#fab").classList.contains("is-open") && qa(".fab-action").length === 5);
+  check("label aksi berada di kiri tombol", () => {
+    const label = q('.fab-action[data-fab="preview"] .fab-label').getBoundingClientRect();
+    const icon = q('.fab-action[data-fab="preview"] .fab-icon').getBoundingClientRect();
+    return label.right <= icon.left + 1;
+  });
+
+  click(q('[data-fab="preview"]'));
+  check("modal preview terbuka penuh", () => Boolean(q(".modal-backdrop .modal-xl")) && Boolean(q("#preview-text")));
+  check("preview modal memuat teks laporan", () => q("#preview-text").textContent.includes("Grand Total: 115 Rit"));
+  check("validasi ikut tampil di modal preview", () => q("#validasi-pill").textContent.trim() === "VALID");
+  check("preview modal tidak menutupi seluruh halaman", () => {
+    const modal = q(".modal-xl").getBoundingClientRect();
+    return modal.width <= window.innerWidth && modal.height <= window.innerHeight;
+  });
+  click(q('.modal-foot [data-modal="close"]'));
+  check("modal preview tertutup", () => !q(".modal-backdrop"));
+
+  click(q("#fab-main"));
+  click(q('[data-fab="txt"]'));
+  check("modal TXT terbuka dengan isi laporan", () =>
+    Boolean(q("#txt-preview")) && q("#txt-preview").textContent.includes("RINCIAN UKURAN BATU")
+  );
+  click(q('.modal-foot [data-modal="close"]'));
+
+  click(q("#fab-main"));
+  click(q('[data-fab="pdf"]'));
+  check("modal PDF terbuka dengan iframe pratinjau", () => Boolean(q(".modal-xl .pdf-frame")));
+  click(q('.modal-foot [data-modal="close"]'));
+  check("modal PDF tertutup", () => !q(".modal-backdrop"));
+
+  click(q("#fab-main"));
+  click(q('[data-fab="simpan"]'));
+  check("modal simpan menampilkan ringkasan", () => Boolean(q(".save-summary")) && q(".save-summary").textContent.includes("115 rit"));
+  click(q('.modal-foot [data-modal="close"]'));
+
+  click(q("#fab-main"));
+  click(q('[data-fab="lainnya"]'));
+  check("modal lainnya memuat pengaturan export", () => Boolean(q("#chk-sementara")) && Boolean(q('[data-act="export-json"]')));
+  click(q('.modal-foot [data-modal="close"]'));
+  check("tidak ada sisa modal terbuka", () => !q(".modal-backdrop"));
 
   /* 14. JSON master dapat diakses */
   await checkAsync("semua file JSON master dapat diakses", async () => {

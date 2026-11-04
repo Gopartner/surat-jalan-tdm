@@ -20,7 +20,7 @@ import { validateReport, formatTanggal } from "./validation.js";
 import { DriverSection } from "./driver.js";
 import { MaterialSection } from "./material.js";
 import { buildReportText } from "./report-text.js";
-import { downloadText, copyText, downloadPdf, hasPdfLibrary, printReport, buildPrintHtml } from "./export.js";
+import { downloadText, copyText, downloadPdf, buildPdf, hasPdfLibrary, printReport, buildPrintHtml } from "./export.js";
 import * as storage from "./storage.js";
 import { qs, escapeHtml, debounce, timestampID, downloadFile } from "./dom.js";
 
@@ -32,7 +32,7 @@ const state = {
   rekap: null,
   material: null,
   validation: null,
-  ui: { sementara: false, ready: false, liveCollapsed: false },
+  ui: { sementara: false, ready: false, liveCollapsed: false, theme: "system" },
 };
 
 let driverSection = null;
@@ -41,6 +41,126 @@ let materialSection = null;
 const el = (id) => document.getElementById(id);
 
 const ICON = { ok: "✓", warn: "!", err: "✕" };
+
+const THEME_PREFS = ["system", "light", "dark"];
+const prefersDark = window.matchMedia("(prefers-color-scheme: dark)");
+
+/* ---------------- Tema ---------------- */
+
+function resolvedTheme(pref) {
+  if (pref === "dark") return "dark";
+  if (pref === "light") return "light";
+  return prefersDark.matches ? "dark" : "light";
+}
+
+/** Terapkan preferensi tema; `persist` menyimpannya ke LocalStorage. */
+function applyTheme(pref, { persist = false } = {}) {
+  const next = THEME_PREFS.includes(pref) ? pref : "system";
+  state.ui.theme = next;
+  const resolved = resolvedTheme(next);
+
+  document.documentElement.dataset.theme = resolved;
+  document.documentElement.dataset.themePref = next;
+
+  document.querySelectorAll("[data-theme-option]").forEach((btn) => {
+    const active = btn.dataset.themeOption === next;
+    btn.classList.toggle("is-active", active);
+    btn.setAttribute("aria-pressed", String(active));
+  });
+
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute("content", resolved === "dark" ? "#0a1522" : "#0f2f52");
+
+  if (persist) storage.saveSettings({ theme: next });
+}
+
+/* ---------------- FAB ---------------- */
+
+function setFabOpen(open) {
+  const fab = el("fab");
+  if (!fab) return;
+  fab.classList.toggle("is-open", open);
+  document.body.classList.toggle("fab-open", open);
+  el("fab-main")?.setAttribute("aria-expanded", String(open));
+}
+
+function toggleFab() {
+  const fab = el("fab");
+  setFabOpen(!(fab && fab.classList.contains("is-open")));
+}
+
+function openAction(type) {
+  if (type === "preview") return openPreviewModal();
+  if (type === "pdf") return openPdfModal();
+  if (type === "txt") return openTxtModal();
+  if (type === "simpan") return openSaveModal();
+  if (type === "lainnya") return openMoreModal();
+  return undefined;
+}
+
+/* ---------------- Dialog ---------------- */
+
+/**
+ * Modal generik. `flush` menghilangkan padding agar preview/PDF memenuhi kotak.
+ */
+function openDialog({ title, subtitle = "", size = "", flush = false, body = "", footer = "", onMount }) {
+  const root = el("modal-root");
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+  const sizeClass = size === "xl" ? "modal-xl" : size === "lg" ? "modal-lg" : "";
+
+  backdrop.innerHTML = `
+    <div class="modal ${sizeClass}" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}">
+      <div class="modal-head">
+        <div>
+          <h3>${escapeHtml(title)}</h3>
+          ${subtitle ? `<p class="modal-sub">${escapeHtml(subtitle)}</p>` : ""}
+        </div>
+        <button type="button" class="icon-btn" data-modal="close" aria-label="Tutup">✕</button>
+      </div>
+      <div class="modal-body ${flush ? "is-flush" : ""}">${body}</div>
+      ${footer ? `<div class="modal-foot">${footer}</div>` : ""}
+    </div>`;
+
+  let closed = false;
+  const closeHandlers = [];
+  const close = () => {
+    if (closed) return;
+    closed = true;
+    document.removeEventListener("keydown", onKey);
+    backdrop.remove();
+    closeHandlers.forEach((fn) => {
+      try {
+        fn();
+      } catch {
+        /* diamkan */
+      }
+    });
+    if (!document.querySelector(".modal-backdrop")) document.body.classList.remove("has-modal");
+  };
+  const onKey = (event) => {
+    if (event.key === "Escape") close();
+  };
+
+  backdrop.addEventListener("click", (event) => {
+    if (event.target === backdrop) return close();
+    if (event.target.closest('[data-modal="close"]')) close();
+    return undefined;
+  });
+  document.addEventListener("keydown", onKey);
+  document.body.classList.add("has-modal");
+  root.appendChild(backdrop);
+
+  const dialog = {
+    backdrop,
+    close,
+    onClose: (fn) => closeHandlers.push(fn),
+    q: (selector) => backdrop.querySelector(selector),
+    qa: (selector) => Array.from(backdrop.querySelectorAll(selector)),
+  };
+  onMount?.(dialog);
+  return dialog;
+}
 
 /* ---------------- Toast ---------------- */
 
@@ -69,6 +189,7 @@ function setSaveState(kind) {
 /* ---------------- Inisialisasi ---------------- */
 
 async function init() {
+  applyTheme(storage.getSettings().theme || "system");
   wireStaticEvents();
 
   try {
@@ -79,7 +200,6 @@ async function init() {
   }
 
   state.ui.sementara = Boolean(storage.getSettings().sementara);
-  el("chk-sementara").checked = state.ui.sementara;
   state.ui.liveCollapsed = Boolean(storage.getSettings().liveCollapsed);
   applyLiveCollapsed();
 
@@ -327,31 +447,31 @@ function renderValidation() {
   const pill = el("validasi-pill");
   const list = el("validasi-list");
   const summary = el("validasi-summary");
-  if (!pill || !list) return;
+  if (!pill && !list && !summary) return;
 
-  const cls = `status-pill status-${validation.status === "valid" ? "valid" : validation.status === "incomplete" ? "incomplete" : "mismatch"}`;
-  pill.className = cls;
-  pill.textContent = validation.label;
-
-  if (summary) {
-    const parts = [];
-    parts.push(`${validation.errors} kesalahan`);
-    parts.push(`${validation.warnings} peringatan`);
-    summary.textContent = `Status ${validation.label} — ${parts.join(" · ")}.`;
+  if (pill) {
+    pill.className = statusClass(validation.status);
+    pill.textContent = validation.label;
   }
 
-  list.innerHTML = validation.items
-    .map((check) => {
-      const kind = check.level === "ok" ? "is-ok" : check.level === "warn" ? "is-warn" : "is-err";
-      return `<li class="check-item ${kind}">
+  if (summary) {
+    summary.textContent = `Status ${validation.label} — ${validation.errors} kesalahan · ${validation.warnings} peringatan.`;
+  }
+
+  if (list) {
+    list.innerHTML = validation.items
+      .map((check) => {
+        const kind = check.level === "ok" ? "is-ok" : check.level === "warn" ? "is-warn" : "is-err";
+        return `<li class="check-item ${kind}">
         <span class="check-mark">${ICON[check.level] || "•"}</span>
         <div>
           <strong>${escapeHtml(check.title)}</strong>
           ${check.detail ? `<span class="check-detail">${escapeHtml(check.detail)}</span>` : ""}
         </div>
       </li>`;
-    })
-    .join("");
+      })
+      .join("");
+  }
 }
 
 function buildCtx() {
@@ -373,16 +493,23 @@ function buildCtx() {
 function renderPreview() {
   const ctx = buildCtx();
   const text = buildReportText(state.report, ctx);
-  el("preview-text").textContent = text;
+  state.previewText = text;
+  state.previewCtx = ctx;
+
+  const pre = el("preview-text");
+  if (pre) pre.textContent = text;
 
   const status = el("preview-status");
-  status.className = `status-pill status-${
-    ctx.validation.status === "valid" ? "valid" : ctx.validation.status === "incomplete" ? "incomplete" : "mismatch"
-  }`;
-  status.textContent = ctx.validation.label;
+  if (status) {
+    status.className = statusClass(ctx.validation.status);
+    status.textContent = ctx.validation.label;
+  }
 
-  el("preview-docid").textContent = ctx.docId;
-  el("preview-updated").textContent = `Diperbarui ${new Date().toLocaleTimeString("id-ID")}`;
+  const docid = el("preview-docid");
+  if (docid) docid.textContent = ctx.docId;
+
+  const updated = el("preview-updated");
+  if (updated) updated.textContent = `Diperbarui ${new Date().toLocaleTimeString("id-ID")}`;
 }
 
 /* ---------------- Ringkasan live ---------------- */
@@ -698,39 +825,35 @@ function wireStaticEvents() {
   /* Driver */
   el("btn-add-driver").addEventListener("click", openAddDriverModal);
 
-  /* Aksi laporan */
-  el("btn-save").addEventListener("click", saveCurrentReport);
-  el("btn-reset").addEventListener("click", resetForm);
-  el("btn-copy").addEventListener("click", handleCopy);
-  el("btn-txt").addEventListener("click", handleDownloadTxt);
-  el("btn-pdf").addEventListener("click", handleDownloadPdf);
-  el("btn-print").addEventListener("click", handlePrint);
+  /* Tema (system / terang / gelap) */
+  document.querySelectorAll("[data-theme-option]").forEach((btn) => {
+    btn.addEventListener("click", () => applyTheme(btn.dataset.themeOption, { persist: true }));
+  });
+  prefersDark.addEventListener("change", () => {
+    if (state.ui.theme === "system") applyTheme("system");
+  });
+
+  /* Floating action button */
+  el("fab-main")?.addEventListener("click", toggleFab);
+  el("fab-actions")?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-fab]");
+    if (!button) return;
+    setFabOpen(false);
+    openAction(button.dataset.fab);
+  });
+  document.addEventListener("click", (event) => {
+    const fab = el("fab");
+    if (!fab || !fab.classList.contains("is-open")) return;
+    if (!event.target.closest("#fab")) setFabOpen(false);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") setFabOpen(false);
+  });
+
   el("btn-open-saved").addEventListener("click", openSavedModal);
 
-  /* Mobile bar */
-  el("btn-m-preview").addEventListener("click", () => {
-    el("preview-panel").scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-  el("btn-m-pdf").addEventListener("click", handleDownloadPdf);
-  el("btn-m-txt").addEventListener("click", handleDownloadTxt);
-  el("btn-m-save").addEventListener("click", saveCurrentReport);
-
   /* JSON */
-  el("btn-export-json").addEventListener("click", handleExportJson);
-  el("btn-import-json").addEventListener("click", () => el("file-import").click());
   el("file-import").addEventListener("change", handleImportJson);
-
-  /* Mode sementara */
-  el("chk-sementara").addEventListener("change", (event) => {
-    state.ui.sementara = event.target.checked;
-    storage.saveSettings({ sementara: state.ui.sementara });
-    toast(
-      state.ui.sementara
-        ? "Export laporan sementara diizinkan."
-        : "Export hanya diizinkan untuk laporan valid.",
-      state.ui.sementara ? "warn" : "ok"
-    );
-  });
 
   /* Print via Ctrl+P */
   window.addEventListener("beforeprint", () => {
@@ -823,6 +946,185 @@ async function handlePrint() {
   } catch (error) {
     toast(`Gagal membuka dialog print: ${escapeHtml(error.message)}`, "err");
   }
+}
+
+/* ---------------- Modal aksi (FAB) ---------------- */
+
+function openPreviewModal() {
+  openDialog({
+    title: "Preview Laporan",
+    subtitle: "Ikut berubah saat Anda mengetik",
+    size: "xl",
+    flush: true,
+    body: `
+      <div class="preview-head">
+        <span class="status-pill status-incomplete" id="preview-status">—</span>
+        <span id="preview-docid">—</span>
+        <span id="preview-updated">—</span>
+      </div>
+      <pre class="preview-text" id="preview-text" aria-live="polite"></pre>
+      <div class="preview-validasi">
+        <div class="validasi-head">
+          <span class="card-hint">Status validasi</span>
+          <span class="status-pill status-incomplete" id="validasi-pill">—</span>
+        </div>
+        <p class="card-hint" id="validasi-summary"></p>
+        <ul class="check-list" id="validasi-list"></ul>
+      </div>`,
+    footer: `
+      <span class="card-hint spacer">Data tersimpan otomatis di browser ini</span>
+      <button type="button" class="btn btn-secondary" data-act="copy">⧉ Salin Teks</button>
+      <button type="button" class="btn btn-secondary" data-act="txt">📄 TXT</button>
+      <button type="button" class="btn btn-primary" data-act="pdf">📕 PDF</button>
+      <button type="button" class="btn btn-secondary" data-modal="close">Tutup</button>`,
+    onMount: (dialog) => {
+      renderPreview();
+      renderValidation();
+      dialog.q('[data-act="copy"]').addEventListener("click", handleCopy);
+      dialog.q('[data-act="txt"]').addEventListener("click", () => {
+        dialog.close();
+        openTxtModal();
+      });
+      dialog.q('[data-act="pdf"]').addEventListener("click", () => {
+        dialog.close();
+        openPdfModal();
+      });
+    },
+  });
+}
+
+function openPdfModal() {
+  const report = state.report;
+  if (!hasPdfLibrary()) {
+    toast("Pustaka PDF tidak tersedia — membuka dialog print.", "warn");
+    printReport(report, ctxFor(report));
+    return;
+  }
+
+  let doc;
+  try {
+    doc = buildPdf(report, ctxFor(report));
+  } catch (error) {
+    toast(`Gagal membuat PDF: ${escapeHtml(error.message)}`, "err");
+    return;
+  }
+
+  const blobUrl = String(doc.output("bloburl"));
+  const dialog = openDialog({
+    title: "Pratinjau PDF",
+    subtitle: `A4 · ${doc.getNumberOfPages()} halaman`,
+    size: "xl",
+    flush: true,
+    body: `<iframe class="pdf-frame" src="${blobUrl}" title="Pratinjau PDF laporan"></iframe>`,
+    footer: `
+      <span class="card-hint spacer">Diperiksa otomatis sebelum diunduh</span>
+      <button type="button" class="btn btn-secondary" data-act="print">🖨 Print</button>
+      <button type="button" class="btn btn-primary" data-act="download">⬇ Download PDF</button>
+      <button type="button" class="btn btn-secondary" data-modal="close">Tutup</button>`,
+    onMount: (dlg) => {
+      dlg.q('[data-act="download"]').addEventListener("click", async () => {
+        if (!(await guardExport())) return;
+        downloadPdf(state.report, ctxFor(state.report));
+        toast("PDF berhasil dibuat.", "ok");
+      });
+      dlg.q('[data-act="print"]').addEventListener("click", async () => {
+        if (!(await guardExport())) return;
+        printReport(state.report, ctxFor(state.report));
+      });
+    },
+  });
+
+  dialog.onClose(() => {
+    try {
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      /* diamkan */
+    }
+  });
+}
+
+function openTxtModal() {
+  const text = state.previewText || buildReportText(state.report, ctxFor(state.report));
+  openDialog({
+    title: "Teks Laporan",
+    subtitle: "Format WhatsApp — siap disalin",
+    size: "lg",
+    flush: true,
+    body: `<pre class="preview-text" id="txt-preview">${escapeHtml(text)}</pre>`,
+    footer: `
+      <span class="card-hint spacer">${formatNumber(text.length)} karakter</span>
+      <button type="button" class="btn btn-secondary" data-act="copy">⧉ Salin</button>
+      <button type="button" class="btn btn-primary" data-act="download">⬇ Download TXT</button>
+      <button type="button" class="btn btn-secondary" data-modal="close">Tutup</button>`,
+    onMount: (dialog) => {
+      dialog.q('[data-act="copy"]').addEventListener("click", handleCopy);
+      dialog.q('[data-act="download"]').addEventListener("click", handleDownloadTxt);
+    },
+  });
+}
+
+function openSaveModal() {
+  const report = state.report;
+  const statusLabel = state.validation?.status === "valid" ? "FINAL" : "DRAFT";
+
+  openDialog({
+    title: "Simpan Laporan",
+    subtitle: "Tersimpan di LocalStorage browser ini",
+    body: `
+      <div class="save-summary">
+        <div><span>Nomor dokumen</span><strong>${escapeHtml(buildDocId(report))}</strong></div>
+        <div><span>Tanggal</span><strong>${escapeHtml(formatTanggal(report.info.tanggal) || "—")}</strong></div>
+        <div><span>Grand total</span><strong>${formatNumber(state.rekap.grandTotal)} rit</strong></div>
+        <div><span>Status</span><strong>${statusLabel}</strong></div>
+        <div><span>Sudah tersimpan</span><strong>${formatNumber(storage.countReports())} dokumen</strong></div>
+      </div>
+      <p class="field-note">Menyimpan laporan tidak mengubah file <code>data/*.json</code>.</p>`,
+    footer: `
+      <button type="button" class="btn btn-secondary" data-modal="close">Batal</button>
+      <button type="button" class="btn btn-primary" data-act="save">💾 Simpan</button>`,
+    onMount: (dialog) => {
+      dialog.q('[data-act="save"]').addEventListener("click", () => {
+        saveCurrentReport();
+        dialog.close();
+      });
+    },
+  });
+}
+
+function openMoreModal() {
+  openDialog({
+    title: "Lainnya",
+    body: `
+      <label class="field-note" style="display: flex; gap: 8px; align-items: flex-start">
+        <input type="checkbox" id="chk-sementara" style="margin-top: 3px" ${state.ui.sementara ? "checked" : ""} />
+        <span>Izinkan export <strong>laporan sementara</strong> walau validasi belum lengkap.</span>
+      </label>
+      <div class="more-grid">
+        <button type="button" class="btn btn-secondary" data-act="print">🖨 Print / Save PDF</button>
+        <button type="button" class="btn btn-secondary" data-act="export-json">⬇ Export JSON</button>
+        <button type="button" class="btn btn-secondary" data-act="import-json">⬆ Import JSON</button>
+        <button type="button" class="btn btn-danger" data-act="reset">↺ Reset Form</button>
+      </div>
+      <p class="field-note">Data laporan dan preferensi tema disimpan di LocalStorage browser ini — tidak dikirim ke server.</p>`,
+    footer: `<button type="button" class="btn btn-secondary" data-modal="close">Tutup</button>`,
+    onMount: (dialog) => {
+      dialog.q("#chk-sementara").addEventListener("change", (event) => {
+        state.ui.sementara = event.target.checked;
+        storage.saveSettings({ sementara: state.ui.sementara });
+        toast(
+          state.ui.sementara ? "Export laporan sementara diizinkan." : "Export hanya diizinkan untuk laporan valid.",
+          state.ui.sementara ? "warn" : "ok"
+        );
+      });
+      dialog.q('[data-act="print"]').addEventListener("click", handlePrint);
+      dialog.q('[data-act="export-json"]').addEventListener("click", handleExportJson);
+      dialog.q('[data-act="import-json"]').addEventListener("click", () => el("file-import").click());
+      dialog.q('[data-act="reset"]').addEventListener("click", () => {
+        dialog.close();
+        resetForm();
+      });
+    },
+  });
 }
 
 /* ---------------- Simpan / muat laporan ---------------- */
