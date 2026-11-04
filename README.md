@@ -11,7 +11,7 @@ ritase, lihat rekap otomatis, lalu bagikan laporan sebagai teks WhatsApp atau PD
 - **Penyimpanan lokal** memakai LocalStorage: draft tersimpan otomatis, laporan bisa disimpan,
   diedit, diexport, dan diimport.
 
-**Website:** <https://yudibilly.github.io/surat-jalan-tdm/>
+**Website:** <https://gopartner.github.io/surat-jalan-tdm/>
 
 ---
 
@@ -381,23 +381,24 @@ Workflow `.github/workflows/deploy.yml` berjalan otomatis saat push ke `main`:
 
 Tidak ada Node/build step saat deploy.
 
-### Aktivasi sekali saja
+### Aktivasi sekali saja (sudah dilakukan)
 
 1. Buka **Settings → Pages**.
 2. Bagian **Build and deployment → Source**, pilih **GitHub Actions**.
 3. Push ke `main` (atau jalankan workflow manual via tab **Actions → Deploy … → Run workflow**).
-4. Tunggu ±1 menit, lalu buka <https://yudibilly.github.io/surat-jalan-tdm/>.
+4. Tunggu ±1 menit, lalu buka <https://gopartner.github.io/surat-jalan-tdm/>.
 
 Jika memakai CLI:
 
 ```bash
-gh api -X POST repos/yudibilly/surat-jalan-tdm/pages -f build_type=workflow
+gh api -X POST repos/Gopartner/surat-jalan-tdm/pages -f build_type=workflow
 ```
 
 ### Fallback: publish lewat branch `gh-pages` (tanpa Actions)
 
-Jika Actions dinonaktifkan di level akun (gejalanya: `HTTP 422: Actions has been disabled for this user`
-atau tidak ada run yang tercipta setelah push), situs tetap bisa dipublikasikan lewat branch statis:
+Jika suatu saat Actions dinonaktifkan di level akun (gejalanya: `HTTP 422: Actions has been disabled
+for this user` atau tidak ada run yang tercipta setelah push), situs tetap bisa dipublikasikan lewat
+branch statis:
 
 ```bash
 # 1. siapkan worktree sementara berisi file situs (tanpa tests/.github)
@@ -411,12 +412,12 @@ git commit -m "deploy: publish static site"
 git push origin gh-pages
 
 # 3. arahkan Pages ke branch tersebut
-gh api -X PUT repos/yudibilly/surat-jalan-tdm/pages \
+gh api -X PUT repos/Gopartner/surat-jalan-tdm/pages \
   --input - <<< '{"build_type":"legacy","source":{"branch":"gh-pages","path":"/"}}'
 ```
 
-Repo ini sudah pernah dipublikasikan dengan cara tersebut. Saat Actions kembali aktif, ubah
-**Settings → Pages → Source** menjadi **GitHub Actions** agar workflow `deploy.yml` mengambil alih.
+Branch `gh-pages` sudah berisi file situs siap saji sebagai cadangan. Untuk kembali ke workflow,
+ubah **Settings → Pages → Source** menjadi **GitHub Actions**.
 
 `main` berisi file `.nojekyll` agar GitHub Pages (mode branch) menyajikan file apa adanya tanpa Jekyll.
 
@@ -424,32 +425,20 @@ Repo ini sudah pernah dipublikasikan dengan cara tersebut. Saat Actions kembali 
 
 | Item | Status |
 | --- | --- |
-| Repository | ✅ `yudibilly/surat-jalan-tdm` (public) |
-| Branch `main` | ✅ berisi source + workflow |
-| Branch `gh-pages` | ✅ berisi file situs siap saji |
-| Sumber Pages | `gh-pages` (build_type `legacy`) |
-| URL target | `https://yudibilly.github.io/surat-jalan-tdm/` |
-| Situs online | ❌ **belum** — akun GitHub dibatasi |
+| Repository | ✅ `Gopartner/surat-jalan-tdm` (public) |
+| Branch aktif | `main` |
+| Branch cadangan | `gh-pages` (27 file situs, untuk deploy tanpa Actions) |
+| Sumber Pages | **GitHub Actions** (`build_type: workflow`) |
+| Workflow terakhir | ✅ success (run `41872117009`) |
+| URL website | <https://gopartner.github.io/surat-jalan-tdm/> |
+| Situs online | ✅ **HTTP 200** — semua aset & JSON master termuat |
 
-Gejala yang ditemukan (semua di level akun, bukan repo):
+Catatan riwayat: repo sempat dibuat di akun `yudibilly`, tetapi akun tersebut dibatasi GitHub
+(`/users/yudibilly` → 404, Actions dinonaktifkan) sehingga Pages tidak bisa menyajikan situs.
+Repo kemudian dipindahkan ke akun ini; repo lama dibiarkan (tidak terlihat publik) dan bisa
+dihapus manual oleh pemiliknya lewat **Settings → Danger Zone**.
 
-- `git push` file workflow ditolak sampai token diberi scope `workflow` → setelah itu push berhasil.
-- `gh workflow run` → `HTTP 422: Actions has been disabled for this user`.
-- `gh api repos/.../pages/builds` → 404, tidak ada build yang pernah dibuat.
-- `https://api.github.com/users/yudibilly` (tanpa token) → 404, `https://github.com/yudibilly` gagal koneksi
-  padahal repo bisa diakses saat terautentikasi sebagai pemilik.
-
-Artinya konten akun tidak terlihat publik sehingga Pages tidak dapat menyajikan situs. Yang perlu
-dilakukan pemilik akun:
-
-1. Cek email dari GitHub tentang pembatasan akun / verifikasi yang tertunda.
-2. Buka **Settings → Billing** (Actions sering dinonaktifkan karena masalah pembayaran).
-3. Selesaikan verifikasi (email, 2FA) lalu ajukan banding di
-   <https://support.github.com/contact> (topik: *Account → Account flagged/suspended*).
-4. Setelah akun normal: buka **Settings → Pages**, set Source ke **GitHub Actions** (untuk memakai
-   workflow) **atau** biarkan `gh-pages` (build otomatis dari branch), lalu jalankan ulang deploy.
-
-Sementara itu aplikasi tetap bisa dipakai:
+Jika ingin memakai akun/organisasi lain:
 
 - **Lokal:** `python -m http.server 8000` lalu buka `http://localhost:8000/`.
 - **Hosting alternatif tanpa GitHub:** unggah folder project (tanpa `.git`, `tests`, `node_modules`)
