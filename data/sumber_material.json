@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-04",
+  "items": [
+    {
+      "id": "sm-tongkang-pel-segintung",
+      "label": "TONGKANG PEL SEGINTUNG",
+      "kategori": "tongkang",
+      "aktif": true
+    },
+    {
+      "id": "sm-tongkang-pel-kuala",
+      "label": "TONGKANG PEL KUALA",
+      "kategori": "tongkang",
+      "aktif": true
+    },
+    {
+      "id": "sm-quarry-edy",
+      "label": "QUARRY EDY",
+      "kategori": "quarry",
+      "aktif": true
+    },
+    {
+      "id": "sm-stockpile-camp-quarry",
+      "label": "STOCKPILE CAMP QUARRY",
+      "kategori": "stockpile",
+      "aktif": true
+    },
+    {
+      "id": "sm-jetty-segintung",
+      "label": "JETTY SEGINTUNG",
+      "kategori": "jetty",
+      "aktif": true
+    }
+  ]
+}

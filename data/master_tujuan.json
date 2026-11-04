@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-04",
+  "items": [
+    {
+      "id": "mt-camp-quarry-edy",
+      "label": "Camp Quarry Edy",
+      "aktif": true
+    },
+    {
+      "id": "mt-stockpile-segintung",
+      "label": "Stockpile Segintung",
+      "aktif": true
+    },
+    {
+      "id": "mt-jetty-segintung",
+      "label": "Jetty Segintung",
+      "aktif": true
+    },
+    {
+      "id": "mt-crushing-plant",
+      "label": "Crushing Plant",
+      "aktif": true
+    },
+    {
+      "id": "mt-barge-muara",
+      "label": "Barge Muara",
+      "aktif": true
+    }
+  ]
+}

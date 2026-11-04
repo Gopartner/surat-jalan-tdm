@@ -1,0 +1,12 @@
+{
+  "name": "surat-jalan-tdm",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Aplikasi statis Surat Jalan TDM — laporan operasional pengiriman material & ritase.",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "test": "node --test tests/unit.test.mjs",
+    "test:browser": "node tests/browser-smoke.mjs"
+  }
+}

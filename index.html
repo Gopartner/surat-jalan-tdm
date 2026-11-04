@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0f2f52" />
+    <meta
+      name="description"
+      content="Surat Jalan TDM — pencatatan laporan operasional pengiriman material dan ritase kendaraan proyek."
+    />
+    <title>SURAT JALAN TDM — Laporan Harian</title>
+
+    <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="assets/icons/site.webmanifest" />
+
+    <link rel="stylesheet" href="assets/css/style.css" />
+    <link rel="stylesheet" href="assets/css/print.css" media="print" />
+    <script src="assets/vendor/jspdf.umd.min.js" defer></script>
+  </head>
+
+  <body>
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">SJT</div>
+        <div>
+          <h1>SURAT JALAN TDM</h1>
+          <p class="brand-sub">Laporan Operasional Pengiriman Material &amp; Ritase</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <span class="save-state" id="save-state" data-state="saved">Draft tersimpan</span>
+        <button type="button" class="btn btn-ghost" id="btn-open-saved">
+          Laporan Tersimpan <span class="badge" id="saved-count">0</span>
+        </button>
+      </div>
+    </header>
+
+    <div class="app-grid">
+      <!-- ================= KOLOM UTAMA ================= -->
+      <div class="col-main">
+        <div id="load-error" class="card" hidden>
+          <div class="card-body">
+            <p class="modal-text" id="load-error-text"></p>
+          </div>
+        </div>
+
+        <!-- A. INFORMASI LAPORAN -->
+        <section class="card section-anchor" id="section-info">
+          <div class="card-head">
+            <h2 class="card-title">Informasi Laporan</h2>
+            <span class="card-hint">Semua pilihan dibaca dari <code>data/*.json</code></span>
+          </div>
+          <div class="card-body">
+            <div class="form-grid">
+              <div class="field">
+                <label class="field-label" for="laporan-select">Jenis Laporan <span class="req">*</span></label>
+                <select class="control" id="laporan-select" aria-describedby="laporan-note"></select>
+                <input
+                  class="control"
+                  id="laporan-custom"
+                  type="text"
+                  placeholder="Tulis jenis laporan manual"
+                  autocomplete="off"
+                  hidden
+                />
+                <span class="field-note" id="laporan-note">Sumber: <code>master_laporan_harian.json</code></span>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="tanggal-display">Tanggal <span class="req">*</span></label>
+                <div class="input-row">
+                  <input
+                    class="control"
+                    id="tanggal-display"
+                    type="text"
+                    inputmode="numeric"
+                    placeholder="DD-MM-YYYY"
+                    maxlength="10"
+                    autocomplete="off"
+                  />
+                  <button type="button" class="btn btn-secondary" id="btn-tanggal-picker" title="Pilih dari kalender" aria-label="Buka kalender">
+                    📅
+                  </button>
+                  <input type="date" id="tanggal-picker" hidden tabindex="-1" aria-hidden="true" />
+                </div>
+                <span class="field-note">Format tampilan <strong>DD-MM-YYYY</strong></span>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="sumber-select">Sumber Material <span class="req">*</span></label>
+                <select class="control" id="sumber-select"></select>
+                <input
+                  class="control"
+                  id="sumber-custom"
+                  type="text"
+                  placeholder="Tulis sumber material manual"
+                  autocomplete="off"
+                  hidden
+                />
+                <span class="field-note">Sumber: <code>sumber_material.json</code></span>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="tujuan-select">Tujuan <span class="req">*</span></label>
+                <select class="control" id="tujuan-select"></select>
+                <input
+                  class="control"
+                  id="tujuan-custom"
+                  type="text"
+                  placeholder="Tulis tujuan manual"
+                  autocomplete="off"
+                  hidden
+                />
+                <span class="field-note">Sumber: <code>master_tujuan.json</code></span>
+              </div>
+
+              <div class="field">
+                <label class="field-label" for="material-select">Material</label>
+                <select class="control" id="material-select"></select>
+                <input
+                  class="control"
+                  id="material-custom"
+                  type="text"
+                  placeholder="Tulis material manual"
+                  autocomplete="off"
+                  hidden
+                />
+                <span class="field-note">Sumber: <code>master_material.json</code></span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- B. RITASE DRIVER -->
+        <section class="card section-anchor" id="section-drivers">
+          <div class="card-head">
+            <h2 class="card-title">Rincian Ritase Driver</h2>
+            <div style="display: flex; gap: 8px; align-items: center">
+              <span class="card-hint" id="driver-count">0 unit</span>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-add-driver">+ Tambah Driver</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="driver-grid" id="driver-grid"></div>
+          </div>
+        </section>
+
+        <!-- C. REKAP TOTAL -->
+        <section class="card section-anchor" id="section-rekap">
+          <div class="card-head">
+            <h2 class="card-title">Rekap Total</h2>
+            <span class="card-hint">Dihitung otomatis dari driver aktif</span>
+          </div>
+          <div class="card-body">
+            <div class="rekap-grid">
+              <div class="stat">
+                <div class="stat-label">Total Armada</div>
+                <div class="stat-value"><span id="rekap-armada">0</span><small>Unit</small></div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">Armada Rental</div>
+                <div class="stat-value"><span id="rekap-rental">0</span><small>Unit</small></div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">Total Ritase</div>
+                <div class="stat-value"><span id="rekap-total-ritase">0</span><small>Rit</small></div>
+              </div>
+              <div class="stat stat-accent">
+                <div class="stat-label">Grand Total</div>
+                <div class="stat-value"><span id="rekap-grand">0</span><small>Rit</small></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- D. RINCIAN UKURAN BATU -->
+        <section class="card section-anchor" id="section-material">
+          <div class="card-head">
+            <h2 class="card-title">Rincian Ukuran Batu</h2>
+            <span class="status-pill status-incomplete" id="material-status">Belum lengkap</span>
+          </div>
+          <div class="card-body">
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead>
+                  <tr id="material-thead-row"></tr>
+                </thead>
+                <tbody id="material-tbody"></tbody>
+                <tfoot id="material-tfoot"></tfoot>
+              </table>
+            </div>
+            <p class="field-note" id="material-note" style="margin-top: 10px">
+              Kosong berarti <strong>belum diisi</strong> (bukan nol). Subtotal hanya menghitung sel yang terisi.
+            </p>
+          </div>
+        </section>
+
+        <!-- E. VALIDASI -->
+        <section class="card section-anchor" id="section-validasi">
+          <div class="card-head">
+            <h2 class="card-title">Validasi Sementara</h2>
+            <div class="validasi-head">
+              <span class="status-pill status-incomplete" id="validasi-pill">Memuat…</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <p class="card-hint" id="validasi-summary">Memeriksa data laporan…</p>
+            <ul class="check-list" id="validasi-list"></ul>
+          </div>
+        </section>
+      </div>
+
+      <!-- ================= PANEL PREVIEW ================= -->
+      <aside class="col-side" id="preview-panel">
+        <section class="card preview-card">
+          <div class="card-head">
+            <h2 class="card-title">Preview Laporan</h2>
+            <span class="status-pill status-incomplete" id="preview-status">Memuat…</span>
+          </div>
+          <div class="card-body">
+            <div class="preview-actions">
+              <button type="button" class="btn btn-primary" id="btn-pdf">⬇ Download PDF</button>
+              <button type="button" class="btn btn-secondary" id="btn-txt">⬇ Download TXT</button>
+              <button type="button" class="btn btn-secondary" id="btn-copy">⧉ Copy Text</button>
+              <button type="button" class="btn btn-secondary" id="btn-print">🖨 Print</button>
+              <button type="button" class="btn btn-secondary span-2" id="btn-save">💾 Simpan Laporan</button>
+              <button type="button" class="btn btn-danger span-2" id="btn-reset">↺ Reset Form</button>
+            </div>
+
+            <pre class="preview-text" id="preview-text" aria-live="polite"></pre>
+
+            <div class="preview-meta">
+              <span id="preview-docid">—</span>
+              <span id="preview-updated">—</span>
+            </div>
+
+            <label class="field-note" style="display: flex; gap: 8px; align-items: flex-start">
+              <input type="checkbox" id="chk-sementara" style="margin-top: 3px" />
+              <span>Izinkan export <strong>laporan sementara</strong> walau validasi belum lengkap.</span>
+            </label>
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap">
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-export-json">Export JSON</button>
+              <button type="button" class="btn btn-secondary btn-sm" id="btn-import-json">Import JSON</button>
+              <input type="file" id="file-import" accept="application/json,.json" hidden />
+            </div>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <!-- Aksi cepat mobile -->
+    <div class="mobile-bar no-print">
+      <button type="button" class="btn btn-secondary" id="btn-m-preview">Preview</button>
+      <button type="button" class="btn btn-primary" id="btn-m-pdf">PDF</button>
+      <button type="button" class="btn btn-secondary" id="btn-m-txt">TXT</button>
+      <button type="button" class="btn btn-secondary" id="btn-m-save">Simpan</button>
+    </div>
+
+    <div id="modal-root"></div>
+    <div class="toast-root" id="toast-root" aria-live="polite" aria-atomic="true"></div>
+    <div class="print-root" id="print-root"></div>
+
+    <script type="module" src="assets/js/app.js"></script>
+    <script>
+      // Harness pengujian otomatis hanya aktif jika URL memakai ?selftest=1
+      if (new URLSearchParams(location.search).has("selftest")) {
+        import("./tests/selftest.js");
+      }
+    </script>
+  </body>
+</html>

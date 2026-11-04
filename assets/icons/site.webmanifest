@@ -1,0 +1,25 @@
+{
+  "name": "Surat Jalan TDM",
+  "short_name": "Surat Jalan",
+  "description": "Pencatatan laporan operasional pengiriman material dan ritase kendaraan proyek.",
+  "start_url": "../../index.html",
+  "scope": "../../",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#eef3f9",
+  "theme_color": "#0f2f52",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-04",
+  "items": [
+    {
+      "id": "lh-segintung",
+      "label": "Laporan Harian Segintung",
+      "judul": "LAPORAN HARIAN SEGINTUNG",
+      "kode": "LH-SGT",
+      "aktif": true,
+      "default": {
+        "sumberId": "sm-tongkang-pel-segintung",
+        "tujuanId": "mt-camp-quarry-edy",
+        "materialId": "mat-koral"
+      }
+    },
+    {
+      "id": "lh-muara",
+      "label": "Laporan Harian Muara",
+      "judul": "LAPORAN HARIAN MUARA",
+      "kode": "LH-MRA",
+      "aktif": true,
+      "default": {
+        "sumberId": "sm-tongkang-pel-kuala",
+        "tujuanId": "mt-barge-muara",
+        "materialId": "mat-koral"
+      }
+    },
+    {
+      "id": "lh-stockpile",
+      "label": "Laporan Harian Stockpile",
+      "judul": "LAPORAN HARIAN STOCKPILE",
+      "kode": "LH-STP",
+      "aktif": true,
+      "default": {
+        "sumberId": "sm-quarry-edy",
+        "tujuanId": "mt-stockpile-segintung",
+        "materialId": "mat-batu-1-2"
+      }
+    },
+    {
+      "id": "lh-jetty",
+      "label": "Laporan Harian Jetty",
+      "judul": "LAPORAN HARIAN JETTY",
+      "kode": "LH-JTY",
+      "aktif": true,
+      "default": {
+        "sumberId": "sm-stockpile-camp-quarry",
+        "tujuanId": "mt-jetty-segintung",
+        "materialId": "mat-koral"
+      }
+    }
+  ]
+}

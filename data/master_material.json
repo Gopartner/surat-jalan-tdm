@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": "2026-11-04",
+  "items": [
+    {
+      "id": "mat-koral",
+      "label": "Koral",
+      "aktif": true
+    },
+    {
+      "id": "mat-batu-05-1",
+      "label": "Batu 0.5/1",
+      "aktif": true
+    },
+    {
+      "id": "mat-batu-1-2",
+      "label": "Batu 1-2",
+      "aktif": true
+    },
+    {
+      "id": "mat-abu-batu",
+      "label": "Abu Batu",
+      "aktif": true
+    },
+    {
+      "id": "mat-split",
+      "label": "Split",
+      "aktif": true
+    }
+  ],
+  "ukuran": [
+    {
+      "id": "batu-05-1",
+      "label": "Batu 0.5/1",
+      "satuan": "rit",
+      "aktif": true
+    },
+    {
+      "id": "batu-1-2",
+      "label": "Batu 1-2",
+      "satuan": "rit",
+      "aktif": true
+    }
+  ]
+}
