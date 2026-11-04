@@ -136,6 +136,26 @@ export class MaterialSection {
     this.renderFoot(material);
   }
 
+  /** Perbarui teks nama/nopol di tabel rincian tanpa render ulang (fokus input tetap). */
+  syncNames(drivers) {
+    if (Array.isArray(drivers)) this.drivers = drivers;
+    for (const driver of this.drivers) {
+      const row = this.tbody.querySelector(`tr[data-uid="${driver.uid}"]`);
+      if (!row) continue;
+      const box = row.querySelector(".mat-driver");
+      if (!box) continue;
+      const name = box.querySelector("strong");
+      if (name) name.textContent = driver.nama || "(tanpa nama)";
+      const meta = box.querySelector("span");
+      if (meta) {
+        const rental = driver.rental ? " · RENTAL" : "";
+        const inactive = driver.active ? "" : " · NONAKTIF";
+        meta.textContent = `${driver.nopol || "-"}${rental}${inactive}`;
+      }
+      row.classList.toggle("is-inactive", !driver.active);
+    }
+  }
+
   handleInput(event) {
     const input = event.target;
     if (!input.classList || !input.classList.contains("mat-input")) return;

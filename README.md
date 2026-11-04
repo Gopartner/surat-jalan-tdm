@@ -63,6 +63,9 @@ ritase, lihat rekap otomatis, lalu bagikan laporan sebagai teks WhatsApp atau PD
   **laporan sementara** diaktifkan.
 
 ### Laporan & export
+- **Panel data real-time** (kiri bawah di desktop, di atas tombol aksi di mobile): armada, ritase,
+  grand total, status validasi, dan selisih material ikut berubah **setiap ketikan** tanpa menekan tombol.
+  Panel bisa diciutkan dan preferensinya tersimpan.
 - **Preview real-time** format WhatsApp (emoji, pemisah, rincian per ukuran batu).
 - **Download TXT** + **Copy Text** untuk dibagikan ke WhatsApp.
 - **Download PDF A4** (jsPDF, header biru navy/oranye, tabel tidak terpotong, footer + nomor halaman).
@@ -122,7 +125,7 @@ surat-jalan-tdm/
 │
 ├── tests/
 │   ├── unit.test.mjs              # 19 unit test logika (node --test)
-│   ├── selftest.js                # 44 pengujian end-to-end di browser
+│   ├── selftest.js                # 57 pengujian end-to-end di browser
 │   └── browser-smoke.mjs          # runner headless (Edge/Chrome)
 │
 └── .github/
@@ -335,12 +338,12 @@ pilih **Save as PDF**.
 
 ```bash
 npm test              # 19 unit test logika (Node 20+, tanpa dependency)
-npm run test:browser  # 44 pengujian end-to-end di Edge/Chrome headless
+npm run test:browser  # 57 pengujian end-to-end di Edge/Chrome headless
 ```
 
 `npm run test:browser` akan menyalakan static server Python di port 8765, membuka
 `http://127.0.0.1:8765/?selftest=1`, lalu membaca hasil dari DOM. Hasil yang diharapkan:
-`SELFTEST PASS 44/44`.
+`SELFTEST PASS 57/57`.
 
 Yang diuji:
 

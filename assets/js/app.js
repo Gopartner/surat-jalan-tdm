@@ -32,7 +32,7 @@ const state = {
   rekap: null,
   material: null,
   validation: null,
-  ui: { sementara: false, ready: false },
+  ui: { sementara: false, ready: false, liveCollapsed: false },
 };
 
 let driverSection = null;
@@ -80,6 +80,8 @@ async function init() {
 
   state.ui.sementara = Boolean(storage.getSettings().sementara);
   el("chk-sementara").checked = state.ui.sementara;
+  state.ui.liveCollapsed = Boolean(storage.getSettings().liveCollapsed);
+  applyLiveCollapsed();
 
   populateSelects();
 
@@ -140,6 +142,7 @@ function setupSections() {
         scheduleSave();
       },
       onIdentity: () => {
+        materialSection?.syncNames(state.report.drivers);
         refreshDerived();
         scheduleSave();
       },
@@ -266,6 +269,7 @@ function refreshDerived() {
   renderMaterialStatus();
   renderValidation();
   renderPreview();
+  renderLive();
 }
 
 function renderRekap() {
@@ -379,6 +383,65 @@ function renderPreview() {
 
   el("preview-docid").textContent = ctx.docId;
   el("preview-updated").textContent = `Diperbarui ${new Date().toLocaleTimeString("id-ID")}`;
+}
+
+/* ---------------- Ringkasan live ---------------- */
+
+function statusClass(status) {
+  const kind = status === "valid" ? "valid" : status === "incomplete" ? "incomplete" : "mismatch";
+  return `status-pill status-${kind}`;
+}
+
+function applyLiveCollapsed() {
+  const dock = el("live-dock");
+  if (!dock) return;
+  dock.classList.toggle("is-collapsed", state.ui.liveCollapsed);
+  el("live-toggle")?.setAttribute("aria-expanded", String(!state.ui.liveCollapsed));
+}
+
+function setLiveValue(id, value) {
+  const node = el(id);
+  if (!node) return;
+  const text = formatNumber(value);
+  if (node.textContent === text) return;
+  node.textContent = text;
+  node.classList.remove("is-bump");
+  void node.offsetWidth;
+  node.classList.add("is-bump");
+}
+
+/** Angka pada dock diperbarui setiap kali input berubah (real-time, tanpa tombol). */
+function renderLive() {
+  const { report, rekap, material, validation } = state;
+  if (!report || !rekap || !material || !validation) return;
+
+  const totalRitase = report.drivers.reduce((sum, driver) => sum + clampRit(driver.ritase), 0);
+
+  setLiveValue("live-armada", rekap.totalArmada);
+  setLiveValue("live-ritase", totalRitase);
+  setLiveValue("live-grand", rekap.grandTotal);
+
+  const status = el("live-status");
+  if (status) {
+    status.className = statusClass(validation.status);
+    status.textContent = validation.label;
+  }
+
+  const hint = el("live-hint");
+  if (hint) {
+    if (!material.expectedCells) {
+      hint.textContent = "Belum ada driver aktif";
+    } else if (!material.complete) {
+      const missing = material.expectedCells - material.filledCells;
+      hint.textContent = `${formatNumber(missing)} sel material kosong`;
+    } else {
+      const diff = material.materialTotal - rekap.grandTotal;
+      hint.textContent = diff === 0 ? "Material sesuai" : `Selisih ${formatNumber(Math.abs(diff))} rit`;
+    }
+  }
+
+  const time = el("live-time");
+  if (time) time.textContent = new Date().toLocaleTimeString("id-ID");
 }
 
 /* ---------------- Simpan draft ---------------- */
@@ -624,6 +687,13 @@ function wireStaticEvents() {
   bindSelect("sumber-select", "sumber-custom", "sumber");
   bindSelect("tujuan-select", "tujuan-custom", "tujuan");
   bindSelect("material-select", "material-custom", "material");
+
+  /* Ringkasan live (bisa diciutkan) */
+  el("live-toggle")?.addEventListener("click", () => {
+    state.ui.liveCollapsed = !state.ui.liveCollapsed;
+    storage.saveSettings({ liveCollapsed: state.ui.liveCollapsed });
+    applyLiveCollapsed();
+  });
 
   /* Driver */
   el("btn-add-driver").addEventListener("click", openAddDriverModal);

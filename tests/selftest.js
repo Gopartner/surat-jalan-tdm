@@ -128,6 +128,19 @@ async function run() {
   check("total armada 8", () => q("#rekap-armada").textContent === "8");
   check("total ritase keseluruhan 115", () => q("#rekap-total-ritase").textContent === "115");
 
+  /* 4b. Panel data real-time */
+  check("panel data real-time tampil", () => Boolean(q("#live-dock")) && !q("#live-dock").classList.contains("is-collapsed"));
+  check("live armada = 8", () => q("#live-armada").textContent === "8");
+  check("live total ritase = 115", () => q("#live-ritase").textContent === "115");
+  check("live grand total = 115", () => q("#live-grand").textContent === "115");
+  check("live status sama dengan status validasi", () => q("#live-status").textContent.trim() === q("#validasi-pill").textContent.trim());
+  check("waktu update live terisi", () => q("#live-time").textContent.trim() !== "—");
+
+  setValue(ritInputs[0], "0");
+  check("angka berubah saat mengetik tanpa blur", () => q("#live-grand").textContent === "104" && q("#rekap-grand").textContent === "104");
+  setValue(ritInputs[0], "11");
+  check("angka kembali setelah diketik ulang", () => q("#live-grand").textContent === "115");
+
   /* 5. Ritase tidak boleh negatif */
   setValue(ritInputs[0], "-5");
   check("ritase tidak bisa negatif (state)", () => state.report.drivers[0].ritase === 0);
@@ -164,6 +177,17 @@ async function run() {
   check("status validasi VALID saat total cocok", () => q("#validasi-pill").textContent.trim() === "VALID");
   check("total rincian material = grand total", () => q('[data-role="material-total"]').textContent === "115");
   check("preview memuat bagian rincian ukuran batu", () => q("#preview-text").textContent.includes("RINCIAN UKURAN BATU"));
+
+  /* 7b. Nama driver tersinkron real-time ke tabel rincian */
+  const namaAsli = state.report.drivers[0].nama;
+  setValue(qa(".driver-name")[0], "Nama Uji Live");
+  check("nama di tabel rincian ikut berubah saat mengetik", () => {
+    const cell = q(`tr[data-uid="${state.report.drivers[0].uid}"] .mat-driver strong`);
+    return Boolean(cell) && cell.textContent === "Nama Uji Live";
+  });
+  check("preview ikut memakai nama baru", () => q("#preview-text").textContent.includes("Nama Uji Live"));
+  setValue(qa(".driver-name")[0], namaAsli);
+  check("nama kembali seperti semula", () => q("#preview-text").textContent.includes(namaAsli));
 
   /* 8. Belum diisi (null) vs nol */
   const target = state.report.drivers[2];
@@ -222,6 +246,15 @@ async function run() {
   check("tombol plus/minus berukuran layak sentuh", () => {
     const buttons = qa(".step-btn");
     return buttons.length > 0 && buttons.every((btn) => btn.getBoundingClientRect().height >= 36);
+  });
+  check("panel live berada di dalam viewport", () => {
+    const r = q("#live-dock").getBoundingClientRect();
+    return r.left >= -1 && r.right <= window.innerWidth + 1 && r.bottom <= window.innerHeight + 1;
+  });
+  check("panel live tidak menutupi tombol aksi mobile", () => {
+    const bar = q(".mobile-bar");
+    if (getComputedStyle(bar).display === "none") return true;
+    return q("#live-dock").getBoundingClientRect().bottom <= bar.getBoundingClientRect().top + 1;
   });
 
   /* 14. JSON master dapat diakses */
