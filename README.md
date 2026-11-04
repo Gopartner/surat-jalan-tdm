@@ -394,6 +394,33 @@ Jika memakai CLI:
 gh api -X POST repos/yudibilly/surat-jalan-tdm/pages -f build_type=workflow
 ```
 
+### Fallback: publish lewat branch `gh-pages` (tanpa Actions)
+
+Jika Actions dinonaktifkan di level akun (gejalanya: `HTTP 422: Actions has been disabled for this user`
+atau tidak ada run yang tercipta setelah push), situs tetap bisa dipublikasikan lewat branch statis:
+
+```bash
+# 1. siapkan worktree sementara berisi file situs (tanpa tests/.github)
+git worktree add --detach /tmp/sjt-pages
+cd /tmp/sjt-pages
+git checkout --orphan gh-pages
+
+# 2. salin file situs, lalu commit & push
+git add -A
+git commit -m "deploy: publish static site"
+git push origin gh-pages
+
+# 3. arahkan Pages ke branch tersebut
+gh api -X PUT repos/yudibilly/surat-jalan-tdm/pages \
+  --input - <<< '{"build_type":"legacy","source":{"branch":"gh-pages","path":"/"}}'
+```
+
+Repo ini sudah pernah dipublikasikan dengan cara tersebut. Saat Actions kembali aktif, ubah
+**Settings → Pages → Source** menjadi **GitHub Actions** agar workflow `deploy.yml` mengambil alih.
+
+`main` berisi file `.nojekyll` agar GitHub Pages (mode branch) menyajikan file apa adanya tanpa Jekyll.
+
+
 ---
 
 ## Batasan yang diketahui
