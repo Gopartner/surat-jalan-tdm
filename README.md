@@ -420,6 +420,41 @@ Repo ini sudah pernah dipublikasikan dengan cara tersebut. Saat Actions kembali 
 
 `main` berisi file `.nojekyll` agar GitHub Pages (mode branch) menyajikan file apa adanya tanpa Jekyll.
 
+### Status deployment saat ini (4 November 2026)
+
+| Item | Status |
+| --- | --- |
+| Repository | ✅ `yudibilly/surat-jalan-tdm` (public) |
+| Branch `main` | ✅ berisi source + workflow |
+| Branch `gh-pages` | ✅ berisi file situs siap saji |
+| Sumber Pages | `gh-pages` (build_type `legacy`) |
+| URL target | `https://yudibilly.github.io/surat-jalan-tdm/` |
+| Situs online | ❌ **belum** — akun GitHub dibatasi |
+
+Gejala yang ditemukan (semua di level akun, bukan repo):
+
+- `git push` file workflow ditolak sampai token diberi scope `workflow` → setelah itu push berhasil.
+- `gh workflow run` → `HTTP 422: Actions has been disabled for this user`.
+- `gh api repos/.../pages/builds` → 404, tidak ada build yang pernah dibuat.
+- `https://api.github.com/users/yudibilly` (tanpa token) → 404, `https://github.com/yudibilly` gagal koneksi
+  padahal repo bisa diakses saat terautentikasi sebagai pemilik.
+
+Artinya konten akun tidak terlihat publik sehingga Pages tidak dapat menyajikan situs. Yang perlu
+dilakukan pemilik akun:
+
+1. Cek email dari GitHub tentang pembatasan akun / verifikasi yang tertunda.
+2. Buka **Settings → Billing** (Actions sering dinonaktifkan karena masalah pembayaran).
+3. Selesaikan verifikasi (email, 2FA) lalu ajukan banding di
+   <https://support.github.com/contact> (topik: *Account → Account flagged/suspended*).
+4. Setelah akun normal: buka **Settings → Pages**, set Source ke **GitHub Actions** (untuk memakai
+   workflow) **atau** biarkan `gh-pages` (build otomatis dari branch), lalu jalankan ulang deploy.
+
+Sementara itu aplikasi tetap bisa dipakai:
+
+- **Lokal:** `python -m http.server 8000` lalu buka `http://localhost:8000/`.
+- **Hosting alternatif tanpa GitHub:** unggah folder project (tanpa `.git`, `tests`, `node_modules`)
+  ke Netlify Drop, Cloudflare Pages, atau Vercel — semuanya host statis, tanpa build step.
+
 
 ---
 
